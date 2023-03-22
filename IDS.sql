@@ -1,0 +1,12 @@
+DROP TABLE airplanes        CASCADE CONSTRAINTS;
+DROP TABLE airlines         CASCADE CONSTRAINTS;
+
+DROP TABLE seats            CASCADE CONSTRAINTS;
+DROP TABLE seats_for_animal CASCADE CONSTRAINTS; /* inherits from seats */
+
+DROP TABLE flight           CASCADE CONSTRAINTS;
+DROP TABLE airport          CASCADE CONSTRAINTS;
+DROP TABLE _users           CASCADE CONSTRAINTS;
+DROP TABLE rezervcations    CASCADE CONSTRAINTS;
+DROP TABLE tickets          CASCADE CONSTRAINTS;
+
