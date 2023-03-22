@@ -61,13 +61,44 @@
   
     CREATE TABLE reservations (
         id              NUMBER NOT NULL PRIMARY KEY,
-        price           NUMBER,
+        cost            NUMBER,
         payment_status  NUMBER NOT NULL CHECK(payment_status = 0 or payment_status = 1), -- true or false
         created_at      TIMESTAMP NOT NULL,
         created_by      NUMBER,
     
         CONSTRAINT reservation_creator_fk FOREIGN KEY (created_by) REFERENCES customers(id)
     );
+    
+    CREATE TABLE tickets (
+        ID              NUMBER NOT NULL PRIMARY KEY,
+        cost            NUMBER NOT NULL,
+        reservation     NUMBER NOT NULL,
+        passenger       NUMBER NOT NULL,
+        flight          NUMBER NOT NULL,
+        seat_number     VARCHAR(3) CHECK(REGEXP_LIKE(seat_number, '[0-9][0-9][A-K]')),
+        seat_class      VARCHAR(1) CHECK(REGEXP_LIKE(seat_class, '(F|B|E)')),
+    
+        CONSTRAINT ticket_in_reservation_fk   FOREIGN KEY (reservation) REFERENCES reservations(ID),
+        CONSTRAINT ticket_for_passenger_fk    FOREIGN KEY (passenger)   REFERENCES passengers(ID),
+        CONSTRAINT ticket_for_flight_fk       FOREIGN KEY (flight)      REFERENCES flights(ID)
+     );
+     
+    CREATE TABLE seats (
+        ID          NUMBER NOT NULL PRIMARY KEY,
+        class       NUMBER NOT NULL CHECK(class = 1 or class =2 or class = 3), /*class == 3 is animal class*/
+        cost        NUMBER,
+        constraint People_AltPK unique (ID,class)
+     );
+     
+      CREATE TABLE seats_for_animal (
+        ID          NUMBER NOT NULL,
+        cage_size   NUMBER NOT NULL,
+        class       NUMBER NOT NULL CHECK(class = 1 or class =2 or class = 3), /*class == 3 is animal class*/
+        cost        NUMBER,
+        
+
+        FOREIGN KEY (ID,class) REFERENCES seats(ID,class)
+     );
     
 
     
@@ -81,3 +112,7 @@ SELECT * FROM airlines;
 
   
   
+
+
+
+
