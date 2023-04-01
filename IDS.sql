@@ -174,7 +174,7 @@ INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Jakub
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 3);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '23' HOUR - INTERVAL '59' MINUTE, 7);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', SYSTIMESTAMP - INTERVAL '8' HOUR, 6);
-INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', SYSTIMESTAMP - INTERVAL '5' HOUR - INTERVAL '47' MINUTE, 4);
+INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '5' HOUR - INTERVAL '47' MINUTE, 4);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', TIMESTAMP '2022-08-17 06:42:00.00 +01:00', 1);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', TIMESTAMP '2023-01-25 16:23:00.00 +01:00', 3);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', TIMESTAMP '2022-10-11 18:31:00.00 +01:00', 4);
@@ -224,6 +224,55 @@ INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('F', 32.50, 10,
 INSERT INTO seats_for_animal (seat_animal_id, ticket, cage_size, class, cost) VALUES (25, 10,'S', 'A', 32.5);
 INSERT INTO seats_for_animal (seat_animal_id, ticket, cage_size, class, cost) VALUES (18, 9, 'L', 'A', 250);
 
+
+/* 
+                1. SELECT
+Najdi počet prodaných letenek pro každý let. 
+spojení tabulek flights, reservations a tickets k získání informací o letech, rezervacích a prodaných letenek. 
+COUNT pro výpočet počtu letenek.
+WHERE pro výběr zaplacených RESERVATIONS.
+GROUP BY pro seskupení výsledku podle ID letu.
+*/
+SELECT f.flights_id, COUNT(t.ticket_id) AS tickets_sold
+FROM flights f
+JOIN tickets t ON f.flights_id = t.reservation
+JOIN reservations r ON t.reservation = r.reservation_id
+WHERE r.payment_status = 'Y'
+GROUP BY f.flights_id;
+
+/* 
+                2. SELECT
+Zjisti, zda existuje let medzi letistemi CPH a VIE
+pouziva vsechny sloupce z tabulky FLIGHTS
+WHERE EXISTS filtrování podle spojení letišť z poddotazu.
+VNORENY SELECT hleda lety, ktere pocinaji v VIE nebo CPH a konci ve VIE nebo CPH
+*/
+SELECT *
+FROM flights
+WHERE EXISTS (
+    SELECT *
+    FROM airports a1
+    JOIN airports a2 ON (a1.airport_id = 'CPH' AND a2.airport_id = 'VIE') OR (a1.airport_id = 'VIE' AND a2.airport_id = 'CPH')
+    WHERE flights.origin = a1.airport_id AND flights.destination = a2.airport_id
+);
+
+/* 
+                3. SELECT
+Najdi zoznam letu, ktere sou provadeny letadly s WIFI
+pouziva vsechny sloupce z tabulky FLIGHTS
+WHERE které rádky z tabulky budou vybrány
+IN používá se v kombinaci s poddotazem pro výběr řádků, jejichž hodnoty jsou obsaženy v poddotazu
+VNORENY SELECT - vrací seznam letadel, která mají wifi připojení
+*/
+SELECT *
+FROM flights
+WHERE airplane IN (
+SELECT airplane_id
+FROM airplanes
+WHERE wifi_connection_b = 'Y'
+);
+
+/*
 SELECT * FROM AIRLINES;
 SELECT * FROM AIRPLANES;
 SELECT * FROM AIRPORTS;
@@ -233,3 +282,4 @@ SELECT * FROM RESERVATIONS;
 SELECT * FROM TICKETS;
 SELECT * FROM SEATS;
 SELECT * FROM SEATS_FOR_ANIMAL;
+*/
