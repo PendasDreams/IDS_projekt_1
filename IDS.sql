@@ -162,6 +162,7 @@ INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, de
 
 
 /*CUSTOMERS*/
+INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Eližda', 'Hlavova', 'eliskajehusta@necum.cz', 'Y');
 INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Denis', 'Novosad', 'dnovos@seznam.cz', 'N');
 INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Roman', 'Poliacik', 'rpolia@gmail.cz', 'Y');
 INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Ondra', 'Parol', 'sup@phub.com', 'N');
@@ -171,6 +172,7 @@ INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Juraj
 INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Jakub', 'Dvořák', 'jdvorak@email.cz', 'N');
 
 /*RESERVATIONS*/
+INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 3);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 3);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '23' HOUR - INTERVAL '59' MINUTE, 7);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', SYSTIMESTAMP - INTERVAL '8' HOUR, 6);
@@ -271,6 +273,39 @@ SELECT airplane_id
 FROM airplanes
 WHERE wifi_connection_b = 'Y'
 );
+
+
+/* 
+                4. SELECT
+Najde seznam zákazníků s pouze jednou rezervací
+pouziva sloupec first name a last name z tabulky customers a počítá owners v tabulce reservations
+GROUP BY vypisuje jen jemno a prijimeni
+*/
+
+  SELECT p.first_name, p.last_name, COUNT(DISTINCT t.reservation_id)
+  FROM  reservations t, customers p
+  WHERE t.owner = p.customer_id
+  GROUP BY p.first_name, p.last_name
+  HAVING COUNT(DISTINCT t.reservation_id) = 1;
+  
+/* 
+                5. SELECT
+Vypíše spolecnosti podle poctu letadel ktere vlastni
+pouziva sloupec airline_id z tabulky airlines a počítá airline v tabulce airplanes
+GROUP BY vypisuje název aerolinky a počer vlastněných letadel
+*/
+
+  -- vypis spolecnosti podle poctu letadel ktere vlastni
+  
+  SELECT a.airline_id,  COUNT(DISTINCT t.airplane_id)
+  FROM  airplanes t, airlines a
+  WHERE t.airline = a.airline_id
+  GROUP BY a.airline_id
+  ORDER BY 2 DESC;
+
+
+  
+  
 
 /*
 SELECT * FROM AIRLINES;
