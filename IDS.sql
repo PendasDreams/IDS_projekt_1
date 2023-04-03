@@ -294,14 +294,38 @@ Vypíše spolecnosti podle poctu letadel ktere vlastni
 pouziva sloupec airline_id z tabulky airlines a počítá airline v tabulce airplanes
 GROUP BY vypisuje název aerolinky a počer vlastněných letadel
 */
-
-  -- vypis spolecnosti podle poctu letadel ktere vlastni
   
   SELECT a.airline_id,  COUNT(DISTINCT t.airplane_id)
   FROM  airplanes t, airlines a
   WHERE t.airline = a.airline_id
   GROUP BY a.airline_id
   ORDER BY 2 DESC;
+  
+ /* 
+                6. SELECT
+Vypíše spolecnosti které provozují lety z Číny do Ruska
+pouziva tabulky airlines airports a flights
+WHERE vypíše aerolinky kde je odletová destinace Čína a příletová Rusko
+*/
+
+  SELECT *
+  FROM  flights
+  NATURAL JOIN airlines, airports a, airports b
+  WHERE a.country = 'China' AND b.country = 'Russia' AND flights.origin = a.airport_id AND flights.destination = b.airport_id AND flights.airline = airline_id;
+
+ /* 
+                7. SELECT
+Vypíše spolecnosti které provozují lety z Číny do Ruska
+pouziva tabulky airlines airports a flights
+WHERE vypíše aerolinky kde je odletová destinace Čína a příletová Rusko
+*/
+
+-- Ktore lety su prevadzakovane British Airways
+  SELECT *
+  FROM flights
+  INNER JOIN airlines 
+  ON airline = airline_id AND airline = 'UAE' ;
+
 
 
   
