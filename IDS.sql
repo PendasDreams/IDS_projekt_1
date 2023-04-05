@@ -10,7 +10,7 @@ DROP TABLE tickets          CASCADE CONSTRAINTS;
 
 CREATE TABLE airlines (
     /* airline_id follows ICAO format */
-    airline_id        VARCHAR(3) NOT NULL PRIMARY KEY CHECK (REGEXP_LIKE(airline_id, '[A-Z]{3}')),
+    airline_id        VARCHAR(3) NOT NULL PRIMARY KEY CHECK (REGEXP_LIKE(airline_id, '^[A-Z]{3}$')),
     airline_callsign  VARCHAR(100) NOT NULL,
     residence         VARCHAR(100) NOT NULL
 );
@@ -28,7 +28,7 @@ CONSTRAINT airplane_owner_airline_fk FOREIGN KEY (airline) REFERENCES airlines(a
 
 CREATE TABLE airports (
     /* airport_id follows IATA format */
-    airport_id      VARCHAR(3) NOT NULL PRIMARY KEY CHECK (REGEXP_LIKE(airport_id, '[A-Z]{3}')),
+    airport_id      VARCHAR(3) NOT NULL PRIMARY KEY CHECK (REGEXP_LIKE(airport_id, '^[A-Z]{3}$')),
     country         VARCHAR(50) NOT NULL
 );
 
