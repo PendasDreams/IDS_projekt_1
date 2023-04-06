@@ -320,7 +320,6 @@ pouziva tabulky airlines airports a flights
 WHERE vypíše aerolinky kde je odletová destinace Čína a příletová Rusko
 */
 
--- Ktore lety su prevadzakovane spolecnosti Emirates
 SELECT *
 FROM flights
 INNER JOIN airlines 
