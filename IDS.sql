@@ -315,14 +315,14 @@ WHERE a.country = 'China' AND b.country = 'Russia' AND flights.origin = a.airpor
 
  /* 
                 7. SELECT
-Vypíše všechny lety které jsou zprostředkovávány Emirates
+Vypíše všechny lety které jsou zprostředkovávány British Airways
 
 */
 
 SELECT *
 FROM flights
 INNER JOIN airlines 
-ON airline = airline_id AND airline = 'UAE' ;
+ON airline = airline_id AND airline = 'BAW' ;
 
 
 /*
