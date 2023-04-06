@@ -315,9 +315,8 @@ WHERE a.country = 'China' AND b.country = 'Russia' AND flights.origin = a.airpor
 
  /* 
                 7. SELECT
-Vypíše spolecnosti které provozují lety z Číny do Ruska
-pouziva tabulky airlines airports a flights
-WHERE vypíše aerolinky kde je odletová destinace Čína a příletová Rusko
+Vypíše všechny lety které jsou zprostředkovávány Emirates
+
 */
 
 SELECT *
