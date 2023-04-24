@@ -355,6 +355,13 @@ JOIN customers c ON r.owner = c.customer_id;
 
 
 
+
+
+
+
+
+
+
 /*PROCEDURES*/
 
 SET serveroutput ON;
@@ -421,13 +428,31 @@ BEGIN
 END;
 /
 
-/*vypíše informace o všech letadlech*/
+
 BEGIN
     get_airline_aircraft_details;
 END;
 /
 
+/*přidání práv*/
+/*xpolia05*/
 
+
+GRANT SELECT ON airplanes     TO xpolia05;
+GRANT SELECT ON airlines    TO xpolia05;
+GRANT SELECT ON airports    TO xpolia05;
+GRANT SELECT ON seats_for_animal    TO xpolia05;
+
+GRANT ALL ON customers      TO xpolia05;
+GRANT ALL ON reservations   TO xpolia05;
+GRANT ALL ON tickets        TO xpolia05;
+GRANT ALL ON seats          TO xpolia05;
+GRANT ALL ON seats_for_animal TO xpolia05;
+
+
+-- execution permission on procedures
+GRANT EXECUTE ON get_airline_aircraft_details TO xpolia05;
+GRANT EXECUTE ON airplane_wifi_report TO xpolia05;
 
 
 
