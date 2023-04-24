@@ -455,5 +455,29 @@ GRANT EXECUTE ON get_airline_aircraft_details TO xpolia05;
 GRANT EXECUTE ON airplane_wifi_report TO xpolia05;
 
 
+/*SELECT WITH*/
+/*The query retrieves customer names, airline callsigns, and departure and arrival airports of the flights associated with each reservation.*/
+WITH payment_status_cte AS (
+  SELECT
+    reservation_id,
+    payment_status
+  FROM reservations
+)
+SELECT
+  c.first_name || ' ' || c.last_name AS customer_name,
+  a.airline_callsign,
+  flights.origin,
+  flights.destination,
+  CASE 
+    WHEN payment_status_cte.payment_status = 'Y' THEN 'Paid'
+    ELSE 'Unpaid'
+  END AS payment_status
+FROM reservations r
+JOIN customers c ON r.owner = c.customer_id
+JOIN flights ON r.reservation_id = flights.flights_id
+JOIN airplanes ap ON flights.airplane = ap.airplane_id
+JOIN airlines a ON ap.airline = a.airline_id
+LEFT JOIN payment_status_cte ON r.reservation_id = payment_status_cte.reservation_id;
+
 
 
