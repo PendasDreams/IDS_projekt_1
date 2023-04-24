@@ -106,6 +106,9 @@ CREATE TABLE seats_for_animal (
     FOREIGN KEY (ticket) REFERENCES tickets(ticket_id)
 );
 
+
+
+
 /*INSERTS*/
 
 /*AIRLINES*/
@@ -173,7 +176,8 @@ INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Jakub
 
 /*RESERVATIONS*/
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 1);
-INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 2);
+INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (200, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 2);
+INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (350, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 2);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '23' HOUR - INTERVAL '59' MINUTE, 7);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', SYSTIMESTAMP - INTERVAL '8' HOUR, 6);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '5' HOUR - INTERVAL '47' MINUTE, 4);
@@ -348,3 +352,83 @@ Spojuje tabulky reservations a customers
 SELECT r.reservation_id, r.cost, r.payment_status, r.created_at, c.first_name, c.last_name, c.email, c.blacklist_b
 FROM reservations r
 JOIN customers c ON r.owner = c.customer_id;
+
+
+
+/*PROCEDURES*/
+
+SET serveroutput ON;
+
+
+/*This will display a table-like result in the console with the number of airplanes with WiFi connection available for each airline.*/
+CREATE OR REPLACE PROCEDURE airplane_wifi_report AS
+    CURSOR airplane_cur IS 
+        SELECT a.airline, al.airline_callsign, COUNT(*) AS num_airplanes
+        FROM airplanes a
+        JOIN airlines al ON a.airline = al.airline_id
+        WHERE a.wifi_connection_b = 'Y'
+        GROUP BY a.airline, al.airline_callsign;
+        
+    v_airline VARCHAR2(3);
+    v_callsign VARCHAR2(100);
+    v_num_airplanes NUMBER;
+BEGIN
+    OPEN airplane_cur;
+    DBMS_OUTPUT.PUT_LINE('Airline | Callsign | Num Airplanes');
+    DBMS_OUTPUT.PUT_LINE('--------|----------|--------------');
+    LOOP
+        FETCH airplane_cur INTO v_airline, v_callsign, v_num_airplanes;
+        EXIT WHEN airplane_cur%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(v_airline || ' | ' || v_callsign || ' | ' || v_num_airplanes);
+    END LOOP;
+    CLOSE airplane_cur;
+END;
+/
+/*This will display a table-like result in the console with the number of airplanes with WiFi connection available for each airline.*/
+BEGIN
+    airplane_wifi_report;
+END;
+/
+
+/*vypíše informace o všech letadlech*/
+CREATE OR REPLACE PROCEDURE get_airline_aircraft_details AS
+  -- Declare variables for cursor and loop
+  CURSOR c_aircraft IS
+    SELECT a.airplane_id, a.manufacturer, a.model, a.wifi_connection_b, al.airline_callsign, al.residence
+    FROM airplanes a
+    JOIN airlines al ON a.airline = al.airline_id;
+  v_aircraft_id     airplanes.airplane_id%TYPE;
+  v_manufacturer   airplanes.manufacturer%TYPE;
+  v_model          airplanes.model%TYPE;
+  v_wifi_connection airplanes.wifi_connection_b%TYPE;
+  v_airline_callsign airlines.airline_callsign%TYPE;
+  v_residence       airlines.residence%TYPE;
+BEGIN
+  -- Open the cursor
+  OPEN c_aircraft;
+  -- Loop through the cursor and process each row
+  LOOP
+    -- Fetch the next row into variables
+    FETCH c_aircraft INTO v_aircraft_id, v_manufacturer, v_model, v_wifi_connection, v_airline_callsign, v_residence;
+    -- Exit loop if no more rows
+    EXIT WHEN c_aircraft%NOTFOUND;
+    -- print it to the console
+    DBMS_OUTPUT.PUT_LINE('Aircraft ' || v_aircraft_id || ' manufactured by ' || v_manufacturer || ' with model ' || v_model ||
+                         ' has wifi connection: ' || v_wifi_connection || ', owned by airline ' || v_airline_callsign || ' from ' || v_residence);
+  END LOOP;
+  -- Close the cursor
+  CLOSE c_aircraft;
+END;
+/
+
+/*vypíše informace o všech letadlech*/
+BEGIN
+    get_airline_aircraft_details;
+END;
+/
+
+
+
+
+
+
