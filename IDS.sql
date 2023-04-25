@@ -515,7 +515,7 @@ BEGIN
         DELETE FROM tickets WHERE reservation = unpaid_reservation.reservation_id;
         DELETE FROM reservations WHERE reservation_id = unpaid_reservation.reservation_id;
     END LOOP;
-    COMMIT;
+    COMMIT; -- implicitni exception handler, ak dojde k chybe pri deletion, neulozia sa zmeny
 END;
 /
 
