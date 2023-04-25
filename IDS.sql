@@ -366,8 +366,45 @@ JOIN customers c ON r.owner = c.customer_id;
 
 SET serveroutput ON;
 
+/*vypíše informace o všech letadlech*/
+CREATE OR REPLACE PROCEDURE get_airline_aircraft_details AS
+  -- Deklarace proměnných pro kurzor a smyčku
+  CURSOR c_aircraft IS
+    SELECT a.airplane_id, a.manufacturer, a.model, a.wifi_connection_b, al.airline_callsign, al.residence
+    FROM airplanes a
+    JOIN airlines al ON a.airline = al.airline_id;
+  v_aircraft_id     airplanes.airplane_id%TYPE;
+  v_manufacturer   airplanes.manufacturer%TYPE;
+  v_model          airplanes.model%TYPE;
+  v_wifi_connection airplanes.wifi_connection_b%TYPE;
+  v_airline_callsign airlines.airline_callsign%TYPE;
+  v_residence       airlines.residence%TYPE;
+BEGIN
+  -- Otevření kurzoru
+  OPEN c_aircraft;
+  -- Smyčka v kurzoru a zpracování každého řádku
+  LOOP
+    -- načtení dalšího řádku do proměnných
+    FETCH c_aircraft INTO v_aircraft_id, v_manufacturer, v_model, v_wifi_connection, v_airline_callsign, v_residence;
+    -- Ukončení smyčky, pokud již nejsou žádné další řádky
+    EXIT WHEN c_aircraft%NOTFOUND;
+    -- vypsat do konzole
+    DBMS_OUTPUT.PUT_LINE('Aircraft ' || v_aircraft_id || ' manufactured by ' || v_manufacturer || ' with model ' || v_model ||
+                         ' has wifi connection: ' || v_wifi_connection || ', owned by airline ' || v_airline_callsign || ' from ' || v_residence);
+  END LOOP;
+  -- Zavření kurzoru
+  CLOSE c_aircraft;
+END;
+/
 
-/*This will display a table-like result in the console with the number of airplanes with WiFi connection available for each airline.*/
+
+BEGIN
+    get_airline_aircraft_details;
+END;
+/
+
+
+/*vypíše tabulku s počtem letadel s dostupným připojením WiFi pro každou leteckou společnost.*/
 CREATE OR REPLACE PROCEDURE airplane_wifi_report AS
     CURSOR airplane_cur IS 
         SELECT a.airline, al.airline_callsign, COUNT(*) AS num_airplanes
@@ -391,57 +428,22 @@ BEGIN
     CLOSE airplane_cur;
 END;
 /
-/*This will display a table-like result in the console with the number of airplanes with WiFi connection available for each airline.*/
+
 BEGIN
     airplane_wifi_report;
 END;
 /
 
-/*vypíše informace o všech letadlech*/
-CREATE OR REPLACE PROCEDURE get_airline_aircraft_details AS
-  -- Declare variables for cursor and loop
-  CURSOR c_aircraft IS
-    SELECT a.airplane_id, a.manufacturer, a.model, a.wifi_connection_b, al.airline_callsign, al.residence
-    FROM airplanes a
-    JOIN airlines al ON a.airline = al.airline_id;
-  v_aircraft_id     airplanes.airplane_id%TYPE;
-  v_manufacturer   airplanes.manufacturer%TYPE;
-  v_model          airplanes.model%TYPE;
-  v_wifi_connection airplanes.wifi_connection_b%TYPE;
-  v_airline_callsign airlines.airline_callsign%TYPE;
-  v_residence       airlines.residence%TYPE;
-BEGIN
-  -- Open the cursor
-  OPEN c_aircraft;
-  -- Loop through the cursor and process each row
-  LOOP
-    -- Fetch the next row into variables
-    FETCH c_aircraft INTO v_aircraft_id, v_manufacturer, v_model, v_wifi_connection, v_airline_callsign, v_residence;
-    -- Exit loop if no more rows
-    EXIT WHEN c_aircraft%NOTFOUND;
-    -- print it to the console
-    DBMS_OUTPUT.PUT_LINE('Aircraft ' || v_aircraft_id || ' manufactured by ' || v_manufacturer || ' with model ' || v_model ||
-                         ' has wifi connection: ' || v_wifi_connection || ', owned by airline ' || v_airline_callsign || ' from ' || v_residence);
-  END LOOP;
-  -- Close the cursor
-  CLOSE c_aircraft;
-END;
-/
 
-
-BEGIN
-    get_airline_aircraft_details;
-END;
-/
 
 /*přidání práv*/
 /*xpolia05*/
 
 
-GRANT SELECT ON airplanes     TO xpolia05;
+GRANT SELECT ON airplanes   TO xpolia05;
 GRANT SELECT ON airlines    TO xpolia05;
 GRANT SELECT ON airports    TO xpolia05;
-GRANT SELECT ON seats_for_animal    TO xpolia05;
+GRANT SELECT ON seats_for_animal  TO xpolia05;
 
 GRANT ALL ON customers      TO xpolia05;
 GRANT ALL ON reservations   TO xpolia05;
@@ -456,7 +458,7 @@ GRANT EXECUTE ON airplane_wifi_report TO xpolia05;
 
 
 /*SELECT WITH*/
-/*The query retrieves customer names, airline callsigns, and departure and arrival airports of the flights associated with each reservation.*/
+/*Dotaz vyhledá jména zákazníků, zkratky leteckých společností a letiště odletu a příletu letů spojených s každou rezervací.*/
 WITH payment_status_cte AS (
   SELECT
     reservation_id,
