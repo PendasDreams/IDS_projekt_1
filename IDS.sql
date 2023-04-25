@@ -502,8 +502,8 @@ BEGIN
 END;
 /
 
-CREATE OR REPLACE PROCEDURE delete_unpaid_reservations
-IS
+/* Pokud klient rezervovanou letenku včas nezaplatí(24h), rezervace se z databáze smaže */
+CREATE OR REPLACE PROCEDURE delete_unpaid_reservations AS
     CURSOR unpaid_reservations_expired_cursor IS
         SELECT r.reservation_id
         FROM reservations r
@@ -520,13 +520,8 @@ END;
 /
 
 BEGIN
-  DBMS_SCHEDULER.CREATE_JOB (
-    job_name        => 'DELETE_UNPAID_RESERVATIONS_JOB',
-    job_type        => 'PLSQL_BLOCK',
-    job_action      => 'BEGIN delete_unpaid_reservations; END;',
-    start_date      => SYSTIMESTAMP,
-    repeat_interval => 'FREQ=MINUTELY; INTERVAL=1', -- Execute the procedure every minute
-    enabled         => TRUE);
+    -- nejsou prava na DBMS_SCHEDULER, pusti si jednom 1
+    delete_unpaid_reservations;
 END;
 /
 
@@ -551,7 +546,6 @@ GRANT ALL ON seats_for_animal TO xpolia05;
 GRANT EXECUTE ON get_airline_aircraft_details TO xpolia05;
 GRANT EXECUTE ON airplane_wifi_report TO xpolia05;
 GRANT EXECUTE ON delete_unpaid_reservations TO xpolia05;
-GRANT CREATE JOB, MANAGE SCHEDULER TO xpolia05;
 
 
 /*SELECT WITH*/
