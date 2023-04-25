@@ -106,8 +106,70 @@ CREATE TABLE seats_for_animal (
     FOREIGN KEY (ticket) REFERENCES tickets(ticket_id)
 );
 
+/* TRIGGERS */
 
+/* TRIGGER 1: aktualizace ceny letenky a nasledne rezervace na zaklade pridanych sedadel */
+CREATE OR REPLACE TRIGGER update_costs_on_seat_insert
+AFTER INSERT ON seats
+FOR EACH ROW
+DECLARE
+  v_ticket_cost NUMBER(10, 2);
+  v_reservation_cost NUMBER(10, 2);
+BEGIN
+  -- Aktualizuj cenu letenky na zaklade sedadla
+  SELECT cost INTO v_ticket_cost FROM tickets WHERE ticket_id = :NEW.ticket;
+  v_ticket_cost := NVL(v_ticket_cost, 0) + :NEW.cost;
+  UPDATE tickets SET cost = v_ticket_cost WHERE ticket_id = :NEW.ticket;
 
+  -- Aktualizuj cenu rezervace na zaklade letenek
+  SELECT cost INTO v_reservation_cost FROM reservations WHERE reservation_id = (SELECT reservation FROM tickets WHERE ticket_id = :NEW.ticket);
+  v_reservation_cost := NVL(v_reservation_cost, 0) + :NEW.cost;
+  UPDATE reservations SET cost = v_reservation_cost WHERE reservation_id = (SELECT reservation FROM tickets WHERE ticket_id = :NEW.ticket);
+END;
+/
+
+-- TRIGGER 2: zajisti, aby cas arrival byl pozdejsi nez cas departure
+CREATE OR REPLACE TRIGGER check_arrival_departure_time
+BEFORE INSERT OR UPDATE OF arrival_time, departure_time ON flights
+FOR EACH ROW
+DECLARE
+    time_difference NUMBER;
+BEGIN
+    time_difference := EXTRACT(SECOND FROM (:NEW.arrival_time - :NEW.departure_time)) + (60 * EXTRACT(MINUTE FROM (:NEW.arrival_time - :NEW.departure_time))) + (3600 * EXTRACT(HOUR FROM (:NEW.arrival_time - :NEW.departure_time))) + (86400 * EXTRACT(DAY FROM (:NEW.arrival_time - :NEW.departure_time)));
+    -- Oracle neumi zpracovat intervaly s presnosti vetsi nez 9 cislic, musi se konvertovat na sekundy...
+    IF time_difference <= 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Arrival time must be later than departure time.');
+    END IF;
+END;
+/
+
+-- TRIGGER 3: zajisti, aby misto origin nebyl rovnaky jako destination
+CREATE OR REPLACE TRIGGER check_airport_difference
+BEFORE INSERT OR UPDATE OF origin, destination ON flights
+FOR EACH ROW
+BEGIN
+    IF :NEW.origin = :NEW.destination THEN
+        RAISE_APPLICATION_ERROR(-20002, 'Arrival airport must be different from the departure airport.');
+    END IF;
+END;
+/
+
+-- TRIGGER 4: zabrani vytvoreni novych rezervaci pro blacklisted zakazniky
+CREATE OR REPLACE TRIGGER prevent_blacklisted_reservations
+BEFORE INSERT ON reservations
+FOR EACH ROW
+DECLARE
+    customer_blacklist_status CHAR(1);
+BEGIN
+    SELECT blacklist_b INTO customer_blacklist_status
+    FROM customers
+    WHERE customer_id = :NEW.owner;
+
+    IF customer_blacklist_status = 'Y' THEN
+        RAISE_APPLICATION_ERROR(-20003, 'Blacklisted customers cannot create new reservations.');
+    END IF;
+END;
+/
 
 /*INSERTS*/
 
@@ -176,8 +238,7 @@ INSERT INTO customers (first_name, last_name, email, blacklist_b) VALUES ('Jakub
 
 /*RESERVATIONS*/
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 1);
-INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (200, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 2);
-INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (350, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 2);
+INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '17' HOUR, 2);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '23' HOUR - INTERVAL '59' MINUTE, 7);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'Y', SYSTIMESTAMP - INTERVAL '8' HOUR, 6);
 INSERT INTO reservations (cost, payment_status, created_at, owner) VALUES (NULL, 'N', SYSTIMESTAMP - INTERVAL '5' HOUR - INTERVAL '47' MINUTE, 4);
@@ -197,6 +258,7 @@ INSERT INTO tickets (cost, reservation) VALUES (NULL, 7);
 INSERT INTO tickets (cost, reservation) VALUES (NULL, 5);
 INSERT INTO tickets (cost, reservation) VALUES (NULL, 1);
 INSERT INTO tickets (cost, reservation) VALUES (NULL, 3);
+INSERT INTO tickets (cost, reservation) VALUES (NULL, 9);
 
 /*SEATS*/
 
@@ -213,6 +275,7 @@ INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('B', 98.30, 3, 
 INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('F', 199.99, 4, 'DAL', 2);
 INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('F', 150.75, 4, 'BAW', 4);
 INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('E', 99.99, 5, 'RYR', 6);
+INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('B', 199.99, 11, 'RYR', 6);
 INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('E', 179.99, 6, 'DAL', 1);
 INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('E', 179.99, 6, 'DAL', 1);
 INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('E', 179.99, 6, 'DAL', 1);
@@ -353,6 +416,11 @@ SELECT r.reservation_id, r.cost, r.payment_status, r.created_at, c.first_name, c
 FROM reservations r
 JOIN customers c ON r.owner = c.customer_id;
 
+/*              10. SELECT 
+Vypíše všechny rezervace včetně jich cen 
+(vytvořeno pro ukázku triggeru update_costs_on_seat_insert)
+*/
+SELECT * FROM reservations;
 
 
 
@@ -434,6 +502,33 @@ BEGIN
 END;
 /
 
+CREATE OR REPLACE PROCEDURE delete_unpaid_reservations
+IS
+    CURSOR unpaid_reservations_expired_cursor IS
+        SELECT r.reservation_id
+        FROM reservations r
+        WHERE r.payment_status = 'N'
+        AND (SYSTIMESTAMP - r.created_at) > INTERVAL '24' HOUR;
+BEGIN
+    FOR unpaid_reservation IN unpaid_reservations_expired_cursor LOOP
+        DELETE FROM seats WHERE ticket IN (SELECT ticket_id FROM tickets WHERE reservation = unpaid_reservation.reservation_id);
+        DELETE FROM tickets WHERE reservation = unpaid_reservation.reservation_id;
+        DELETE FROM reservations WHERE reservation_id = unpaid_reservation.reservation_id;
+    END LOOP;
+    COMMIT;
+END;
+/
+
+BEGIN
+  DBMS_SCHEDULER.CREATE_JOB (
+    job_name        => 'DELETE_UNPAID_RESERVATIONS_JOB',
+    job_type        => 'PLSQL_BLOCK',
+    job_action      => 'BEGIN delete_unpaid_reservations; END;',
+    start_date      => SYSTIMESTAMP,
+    repeat_interval => 'FREQ=MINUTELY; INTERVAL=1', -- Execute the procedure every minute
+    enabled         => TRUE);
+END;
+/
 
 
 /*přidání práv*/
@@ -455,6 +550,8 @@ GRANT ALL ON seats_for_animal TO xpolia05;
 -- execution permission on procedures
 GRANT EXECUTE ON get_airline_aircraft_details TO xpolia05;
 GRANT EXECUTE ON airplane_wifi_report TO xpolia05;
+GRANT EXECUTE ON delete_unpaid_reservations TO xpolia05;
+GRANT CREATE JOB, MANAGE SCHEDULER TO xpolia05;
 
 
 /*SELECT WITH*/
