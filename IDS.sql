@@ -106,6 +106,15 @@ CREATE TABLE seats_for_animal (
     FOREIGN KEY (ticket) REFERENCES tickets(ticket_id)
 );
 
+
+
+
+
+
+
+
+
+
 /* TRIGGERS */
 
 /* TRIGGER 1: aktualizace ceny letenky a nasledne rezervace na zaklade pridanych sedadel */
@@ -171,6 +180,15 @@ BEGIN
 END;
 /
 
+
+
+
+
+
+
+
+
+
 /*INSERTS*/
 
 /*AIRLINES*/
@@ -224,6 +242,12 @@ INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, de
 INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-06-15 09:30:00.00 +00:00', TIMESTAMP '2023-06-15 12:15:00.00 +00:00', 'VH-ABC', 'QFA', 'IST', 'CDG');
 INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-02-12 20:00:00.00 +00:00', TIMESTAMP '2023-04-02 08:25:00.00 +00:00', 'EI-ENE', 'RYR', 'SYD', 'NRT');
 INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-03-15 19:00:00.00 +00:00', TIMESTAMP '2023-04-02 08:30:00.00 +00:00', 'A6-2345', 'UAE', 'PEK', 'SVO');
+INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-06-05 15:30:00.00 +00:00', TIMESTAMP '2023-06-05 19:45:00.00 +00:00', 'N12345', 'DAL', 'LAX', 'VIE');
+INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-06-15 10:20:00.00 +00:00', TIMESTAMP '2023-06-15 16:50:00.00 +00:00', 'G-ABCD', 'BAW', 'LGW', 'VIE');
+INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-06-25 17:00:00.00 +00:00', TIMESTAMP '2023-06-25 23:30:00.00 +00:00', 'VH-ABC', 'QFA', 'SYD', 'VIE');
+INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-07-05 12:00:00.00 +00:00', TIMESTAMP '2023-07-05 18:30:00.00 +00:00', 'EI-FOD', 'RYR', 'DUB', 'VIE');
+INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-07-15 07:40:00.00 +00:00', TIMESTAMP '2023-07-15 14:10:00.00 +00:00', 'A6-1234', 'UAE', 'PEK', 'VIE');
+INSERT INTO flights (departure_time, arrival_time, airplane, airline, origin, destination) VALUES (TIMESTAMP '2023-07-25 20:30:00.00 +00:00', TIMESTAMP '2023-07-26 03:00:00.00 +00:00', 'EI-GOB', 'RYR', 'IST', 'VIE');
 
 
 /*CUSTOMERS*/
@@ -292,6 +316,14 @@ INSERT INTO seats (class, cost, ticket, airline, flight) VALUES ('E', 32.50, 10,
 /*SEATS FOR ANIMAL*/
 INSERT INTO seats_for_animal (seat_animal_id, ticket, cage_size, class, cost) VALUES (25, 10,'S', 'A', 32.5);
 INSERT INTO seats_for_animal (seat_animal_id, ticket, cage_size, class, cost) VALUES (18, 9, 'L', 'A', 250);
+
+
+
+
+
+
+
+
 
 
 /* 
@@ -526,6 +558,57 @@ END;
 /
 
 
+
+
+
+
+
+
+
+
+/* EXPLAIN PLAIN */
+-- zobrazi lety s destinaciou 'VIE' v urcitom casovom intervale (1.6.2023 - 31.7.2023)
+EXPLAIN PLAN FOR
+SELECT a.airline_id, a.airline_callsign, COUNT(f.flights_id) AS total_flights
+FROM flights f
+JOIN airlines a ON f.airline = a.airline_id
+WHERE f.destination = 'VIE'
+AND EXTRACT(YEAR FROM f.departure_time) = 2023
+AND (EXTRACT(MONTH FROM f.departure_time) = 6 OR EXTRACT(MONTH FROM f.departure_time) = 7)
+GROUP BY a.airline_id, a.airline_callsign;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+
+CREATE INDEX idx_flights_destination ON flights(destination);
+CREATE INDEX idx_flights_origin ON flights(origin);
+CREATE INDEX idx_flights_departure_time ON flights(departure_time);
+CREATE INDEX idx_flights_airline ON flights(airline);
+
+
+EXPLAIN PLAN FOR
+SELECT a.airline_id, a.airline_callsign, COUNT(f.flights_id) AS total_flights
+FROM flights f
+JOIN airlines a ON f.airline = a.airline_id
+WHERE f.destination = 'VIE'
+AND EXTRACT(YEAR FROM f.departure_time) = 2023
+AND (EXTRACT(MONTH FROM f.departure_time) = 6 OR EXTRACT(MONTH FROM f.departure_time) = 7)
+GROUP BY a.airline_id, a.airline_callsign;
+
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY());
+
+DROP INDEX idx_flights_destination;
+DROP INDEX idx_flights_origin;
+DROP INDEX idx_flights_departure_time;
+DROP INDEX idx_flights_airline;
+
+
+
+
+
+
+
+
+
 /*přidání práv*/
 /*xpolia05*/
 
@@ -546,6 +629,14 @@ GRANT ALL ON seats_for_animal TO xpolia05;
 GRANT EXECUTE ON get_airline_aircraft_details TO xpolia05;
 GRANT EXECUTE ON airplane_wifi_report TO xpolia05;
 GRANT EXECUTE ON delete_unpaid_reservations TO xpolia05;
+
+
+
+
+
+
+
+
 
 
 /*SELECT WITH*/
